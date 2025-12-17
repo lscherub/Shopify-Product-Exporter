@@ -8,9 +8,10 @@ A beginner-friendly Python desktop application to export Shopify products to Exc
 - **Excel Export**: Saves products and variants data into a formatted `.xlsx` file.
 - **Filtering**: Filter by Status, Vendor, Date, and Sort Order.
   
-<img width="740" height="1032" alt="Screenshot 2025-12-17 145843" src="https://github.com/user-attachments/assets/020db528-4127-43ae-beb6-53fcfca3ce2c" />
-<img width="888" height="810" alt="Screenshot 2025-12-17 145912" src="https://github.com/user-attachments/assets/b280f7ba-d429-440a-b222-f5bc40d87906" />
-<img width="1122" height="1092" alt="Screenshot 2025-12-17 150058" src="https://github.com/user-attachments/assets/2f68d556-0e85-462b-93df-15794d7548bc" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/020db528-4127-43ae-beb6-53fcfca3ce2c" width="31.5%" alt="Screenshot 1" />
+  <img src="https://github.com/user-attachments/assets/2f68d556-0e85-462b-93df-15794d7548bc" width="45%" alt="Screenshot 2" />
+</p>
 
 
 ## Prerequisites
@@ -60,4 +61,5 @@ A beginner-friendly Python desktop application to export Shopify products to Exc
 ## Troubleshooting
 - **401 Authentication Error**: Check if your token is correct and has `read_products` permission.
 - **Module not found**: Ensure you ran `pip install -r requirements.txt`.
+
 
