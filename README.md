@@ -63,4 +63,6 @@ A beginner-friendly Python desktop application to export Shopify products to Exc
 - **Module not found**: Ensure you ran `pip install -r requirements.txt`.
 
 <hr>
+
 **SPECIAL THANKS TO GOOGLE ANTIGRAVITY**
+
