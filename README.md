@@ -1,6 +1,6 @@
 # Shopify Product Exporter
 
-A beginner-friendly Python desktop application to export Shopify products to Excel using the GraphQL Admin API.
+A beginner-friendly Python desktop application to export Shopify products, including Product IDs and Variant IDs to Excel using the GraphQL Admin API.
 
 ## Features
 - **User-Friendly Interface**: Simple GUI built with Tkinter.
@@ -65,4 +65,5 @@ A beginner-friendly Python desktop application to export Shopify products to Exc
 <hr>
 
 **SPECIAL THANKS TO GOOGLE ANTIGRAVITY**
+
 
