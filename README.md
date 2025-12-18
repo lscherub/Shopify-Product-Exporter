@@ -6,7 +6,7 @@ A beginner-friendly Python desktop application to export Shopify products, inclu
 - **User-Friendly Interface**: Simple GUI built with Tkinter.
 - **GraphQL Integration**: Access the latest Shopify Admin API.
 - **Excel Export**: Saves products and variants data into a formatted `.xlsx` file.
-- **Filtering**: Filter by Status, Vendor, Date, and Sort Order.
+- **Filtering**: Filter by Status, Vendor, Date, Tags, and Sort Order.
   
 <p align="center">
   <img src="https://github.com/user-attachments/assets/020db528-4127-43ae-beb6-53fcfca3ce2c" width="31.5%" alt="Screenshot 1" />
@@ -65,5 +65,6 @@ A beginner-friendly Python desktop application to export Shopify products, inclu
 <hr>
 
 **SPECIAL THANKS TO GOOGLE ANTIGRAVITY**
+
 
 
