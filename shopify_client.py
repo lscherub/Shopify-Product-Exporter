@@ -246,6 +246,10 @@ class ShopifyClient:
         if filters.get('vendor') and filters['vendor'] != 'All Vendors':
              safe_vendor = filters['vendor'].replace('"', '\\"')
              query_parts.append(f'vendor:"{safe_vendor}"')
+             
+        if filters.get('tag') and filters['tag'] != 'All Tags':
+             safe_tag = filters['tag'].replace('"', '\\"')
+             query_parts.append(f'tag:"{safe_tag}"')
             
         if filters.get('created_at_min'):
             query_parts.append(f"created_at:>={filters['created_at_min']}")

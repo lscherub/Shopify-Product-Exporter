@@ -78,25 +78,25 @@ class ProductExporterApp:
         self.tag_cb.grid(row=2, column=1, sticky="w", padx=5, pady=2)
         
         # Date Filters
-        ttk.Label(frame, text="Created After:").grid(row=2, column=0, sticky="w")
+        ttk.Label(frame, text="Created After:").grid(row=3, column=0, sticky="w")
         self.date_min = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
         self.use_date_min = tk.BooleanVar()
-        tk.Checkbutton(frame, text="Enable", variable=self.use_date_min).grid(row=2, column=2, sticky="w")
-        self.date_min.grid(row=2, column=1, sticky="w", padx=5, pady=2)
+        tk.Checkbutton(frame, text="Enable", variable=self.use_date_min).grid(row=3, column=2, sticky="w")
+        self.date_min.grid(row=3, column=1, sticky="w", padx=5, pady=2)
         
-        ttk.Label(frame, text="Created Before:").grid(row=3, column=0, sticky="w")
+        ttk.Label(frame, text="Created Before:").grid(row=4, column=0, sticky="w")
         self.date_max = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
         self.use_date_max = tk.BooleanVar()
-        tk.Checkbutton(frame, text="Enable", variable=self.use_date_max).grid(row=3, column=2, sticky="w")
-        self.date_max.grid(row=3, column=1, sticky="w", padx=5, pady=2)
+        tk.Checkbutton(frame, text="Enable", variable=self.use_date_max).grid(row=4, column=2, sticky="w")
+        self.date_max.grid(row=4, column=1, sticky="w", padx=5, pady=2)
 
         # Sorting
-        ttk.Label(frame, text="Sort By:").grid(row=4, column=0, sticky="w")
+        ttk.Label(frame, text="Sort By:").grid(row=5, column=0, sticky="w")
         self.sort_var = tk.StringVar(value="Newest First")
         sort_cb = ttk.Combobox(frame, textvariable=self.sort_var, 
                                values=["Newest First", "Oldest First", "Title A-Z", "Title Z-A"], 
                                state="readonly")
-        sort_cb.grid(row=4, column=1, sticky="w", padx=5, pady=2)
+        sort_cb.grid(row=5, column=1, sticky="w", padx=5, pady=2)
 
     def create_action_frame(self):
         frame = ttk.LabelFrame(self.root, text="3. Export", padding="10")
@@ -180,6 +180,8 @@ class ProductExporterApp:
                 self.root.after(0, lambda: messagebox.showinfo("Success", f"Connected to {message}"))
                 # Trigger vendor fetch
                 self.root.after(0, self.start_vendor_fs)
+                # Trigger tag fetch
+                self.root.after(0, self.start_tag_fs)
             else:
                 self.root.after(0, lambda: self.log(f"Main Error: {message}"))
                 self.root.after(0, lambda: messagebox.showerror("Connection Failed", message))
@@ -204,6 +206,26 @@ class ProductExporterApp:
             else:
                 self.root.after(0, lambda: self.log(f"Failed to fetch vendors: {result}"))
                 self.root.after(0, lambda: self.vendor_cb.set("Error loading vendors"))
+                
+        threading.Thread(target=run, daemon=True).start()
+
+    def start_tag_fs(self):
+        self.log("Fetching tags list from Shopify...")
+        self.tag_cb.set("Loading...")
+        
+        def run():
+            success, result = self.client.fetch_tags()
+            if success:
+                def update_ui():
+                    values = ["All Tags"] + result
+                    self.tag_cb['values'] = values
+                    self.tag_cb.state(["!disabled"]) # enable
+                    self.tag_cb.set("All Tags")
+                    self.log(f"Tags loaded: {len(result)}")
+                self.root.after(0, update_ui)
+            else:
+                self.root.after(0, lambda: self.log(f"Failed to fetch tags: {result}"))
+                self.root.after(0, lambda: self.tag_cb.set("Error loading tags"))
                 
         threading.Thread(target=run, daemon=True).start()
 
@@ -303,6 +325,7 @@ class ProductExporterApp:
             filters = {
                 'status': self.status_var.get(),
                 'vendor': self.vendor_var.get(),
+                'tag': self.tag_var.get(),
                 'sort_key': sort_key,
                 'reverse': reverse
             }
