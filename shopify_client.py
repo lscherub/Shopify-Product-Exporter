@@ -96,6 +96,56 @@ class ShopifyClient:
         sorted_vendors = sorted(list(all_vendors))
         return True, sorted_vendors
 
+    def fetch_tags(self):
+        """
+        Fetches all unique product tags from the shop.
+        Returns (True, list_of_tags) or (False, error_message).
+        """
+        all_tags = set()
+        cursor = None
+        has_next = True
+        
+        while has_next:
+            after_arg = f'(first: 250, after: "{cursor}")' if cursor else "(first: 250)"
+            query = f"""
+            {{
+              shop {{
+                productTags{after_arg} {{
+                  pageInfo {{ hasNextPage endCursor }}
+                  edges {{ node }}
+                }}
+              }}
+            }}
+            """
+            try:
+                # Basic rate limit sleep
+                time.sleep(0.5)
+                
+                response = requests.post(self.url, json={"query": query}, headers=self._get_headers())
+                if response.status_code != 200:
+                    return False, f"HTTP {response.status_code}: {response.text}"
+                
+                data = response.json()
+                if "errors" in data:
+                    return False, f"API Error: {data['errors'][0]['message']}"
+                
+                tags_data = data['data']['shop']['productTags']
+                for edge in tags_data['edges']:
+                    # edges { node } returns the tag string directly in node
+                    tag = edge['node']
+                    if tag:
+                        all_tags.add(tag)
+                
+                page_info = tags_data['pageInfo']
+                has_next = page_info['hasNextPage']
+                cursor = page_info['endCursor']
+                
+            except Exception as e:
+                return False, f"Fetch Tags Exception: {str(e)}"
+                
+        sorted_tags = sorted(list(all_tags))
+        return True, sorted_tags
+
     def build_products_query(self, filters, cursor=None):
         """
         Builds the GraphQL query for fetching products based on filters.
@@ -111,6 +161,10 @@ class ShopifyClient:
              # If vendor contains quotes, we need to escape them for the search parser: vendor:"My \"Best\" Vendor"
              safe_vendor = filters['vendor'].replace('"', '\\"')
              query_parts.append(f'vendor:"{safe_vendor}"')
+             
+        if filters.get('tag') and filters['tag'] != 'All Tags':
+             safe_tag = filters['tag'].replace('"', '\\"')
+             query_parts.append(f'tag:"{safe_tag}"')
             
         if filters.get('created_at_min'):
             query_parts.append(f"created_at:>={filters['created_at_min']}")

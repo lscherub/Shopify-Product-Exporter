@@ -70,6 +70,13 @@ class ProductExporterApp:
         self.vendor_cb['values'] = ["All Vendors"]
         self.vendor_cb.grid(row=1, column=1, sticky="w", padx=5, pady=2)
         
+        # Tag (Dynamic Dropdown)
+        ttk.Label(frame, text="Tag:").grid(row=2, column=0, sticky="w")
+        self.tag_var = tk.StringVar(value="All Tags")
+        self.tag_cb = ttk.Combobox(frame, textvariable=self.tag_var, state="disabled", width=38)
+        self.tag_cb['values'] = ["All Tags"]
+        self.tag_cb.grid(row=2, column=1, sticky="w", padx=5, pady=2)
+        
         # Date Filters
         ttk.Label(frame, text="Created After:").grid(row=2, column=0, sticky="w")
         self.date_min = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
