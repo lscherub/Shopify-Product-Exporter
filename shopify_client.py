@@ -146,6 +146,40 @@ class ShopifyClient:
         sorted_tags = sorted(list(all_tags))
         return True, sorted_tags
 
+    def fetch_publications(self):
+        """
+        Fetches the list of sales channels (publications).
+        Returns (True, list_of_dicts) where dict is {'id': ..., 'name': ...}
+        """
+        query = """
+        {
+          publications(first: 25) {
+            edges {
+              node {
+                id
+                name
+              }
+            }
+          }
+        }
+        """
+        try:
+            response = requests.post(self.url, json={"query": query}, headers=self._get_headers())
+            if response.status_code == 200:
+                data = response.json()
+                if "errors" in data:
+                     return False, f"API Error: {data['errors'][0]['message']}"
+                
+                pubs = []
+                for edge in data['data']['publications']['edges']:
+                    node = edge['node']
+                    pubs.append({'id': node['id'], 'name': node['name']})
+                return True, pubs
+            else:
+                return False, f"HTTP Error {response.status_code}: {response.text}"
+        except Exception as e:
+            return False, f"Fetch Publications Exception: {str(e)}"
+
     def build_products_query(self, filters, cursor=None):
         """
         Builds the GraphQL query for fetching products based on filters.
@@ -154,7 +188,15 @@ class ShopifyClient:
         
         if filters.get('status') and filters['status'] != 'ANY':
             query_parts.append(f"status:{filters['status']}")
-            
+        
+        # Publication / Sales Channel Filter
+        if filters.get('publication_id') and filters['publication_id'] != 'any':
+             # The search syntax 'published_status:<publication_id>' filters for products published to that channel
+             # IMPORTANT: The GID must be quoted e.g. published_status:"gid://..." OR use the numeric ID. 
+             # We will use quotes around the GID.
+             pub_id = filters['publication_id']
+             query_parts.append(f'published_status:"{pub_id}"')
+
         if filters.get('vendor') and filters['vendor'] != 'All Vendors':
              # Handle possible quotes in vendor name for safety in the search syntax
              # We want the search term to be like: vendor:"My Vendor"
@@ -204,6 +246,17 @@ class ShopifyClient:
                 updatedAt
                 publishedAt
                 totalInventory
+                resourcePublications(first: 10) {{
+                  edges {{
+                    node {{
+                      isPublished
+                      publication {{
+                        id
+                        name
+                      }}
+                    }}
+                  }}
+                }}
                 mediaCount {{ count }}
                 variants(first: 50) {{
                   edges {{
@@ -242,7 +295,11 @@ class ShopifyClient:
         query_parts = []
         if filters.get('status') and filters['status'] != 'ANY':
              query_parts.append(f"status:{filters['status']}")
-            
+        
+        if filters.get('publication_id') and filters['publication_id'] != 'any':
+             pub_id = filters['publication_id']
+             query_parts.append(f'published_status:"{pub_id}"')
+
         if filters.get('vendor') and filters['vendor'] != 'All Vendors':
              safe_vendor = filters['vendor'].replace('"', '\\"')
              query_parts.append(f'vendor:"{safe_vendor}"')

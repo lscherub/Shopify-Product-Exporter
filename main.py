@@ -7,7 +7,13 @@ from tkcalendar import DateEntry
 import os
 
 from shopify_client import ShopifyClient
-from exporter import process_product_node, save_to_excel
+from exporter import process_product_node, save_to_excel, filter_duplicates, filter_no_images, filter_duplicates_and_no_images
+
+# ...
+
+
+
+
 import traceback
 
 class ProductExporterApp:
@@ -77,26 +83,42 @@ class ProductExporterApp:
         self.tag_cb['values'] = ["All Tags"]
         self.tag_cb.grid(row=2, column=1, sticky="w", padx=5, pady=2)
         
+        # Sales Channel (Dynamic Dropdown)
+        ttk.Label(frame, text="Sales Channel:").grid(row=3, column=0, sticky="w")
+        self.channel_var = tk.StringVar(value="Any Channel")
+        self.channel_cb = ttk.Combobox(frame, textvariable=self.channel_var, state="disabled", width=38)
+        self.channel_cb['values'] = ["Any Channel"]
+        self.channel_cb.grid(row=3, column=1, sticky="w", padx=5, pady=2)
+        self.channel_map = {} # Maps name to ID
+        
         # Date Filters
-        ttk.Label(frame, text="Created After:").grid(row=3, column=0, sticky="w")
+        ttk.Label(frame, text="Created After:").grid(row=4, column=0, sticky="w")
         self.date_min = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
         self.use_date_min = tk.BooleanVar()
-        tk.Checkbutton(frame, text="Enable", variable=self.use_date_min).grid(row=3, column=2, sticky="w")
-        self.date_min.grid(row=3, column=1, sticky="w", padx=5, pady=2)
+        tk.Checkbutton(frame, text="Enable", variable=self.use_date_min).grid(row=4, column=2, sticky="w")
+        self.date_min.grid(row=4, column=1, sticky="w", padx=5, pady=2)
         
-        ttk.Label(frame, text="Created Before:").grid(row=4, column=0, sticky="w")
+        ttk.Label(frame, text="Created Before:").grid(row=5, column=0, sticky="w")
         self.date_max = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
         self.use_date_max = tk.BooleanVar()
-        tk.Checkbutton(frame, text="Enable", variable=self.use_date_max).grid(row=4, column=2, sticky="w")
-        self.date_max.grid(row=4, column=1, sticky="w", padx=5, pady=2)
+        tk.Checkbutton(frame, text="Enable", variable=self.use_date_max).grid(row=5, column=2, sticky="w")
+        self.date_max.grid(row=5, column=1, sticky="w", padx=5, pady=2)
 
         # Sorting
-        ttk.Label(frame, text="Sort By:").grid(row=5, column=0, sticky="w")
+        ttk.Label(frame, text="Sort By:").grid(row=6, column=0, sticky="w")
         self.sort_var = tk.StringVar(value="Newest First")
         sort_cb = ttk.Combobox(frame, textvariable=self.sort_var, 
                                values=["Newest First", "Oldest First", "Title A-Z", "Title Z-A"], 
                                state="readonly")
-        sort_cb.grid(row=5, column=1, sticky="w", padx=5, pady=2)
+        sort_cb.grid(row=6, column=1, sticky="w", padx=5, pady=2)
+        
+        # Duplicates Only Checkbox
+        self.duplicates_only_var = tk.BooleanVar(value=False)
+        tk.Checkbutton(frame, text="Duplicates Only (SKU/Barcode)", variable=self.duplicates_only_var).grid(row=7, column=1, sticky="w", padx=5, pady=2)
+        
+        # No Images Only Checkbox
+        self.no_images_var = tk.BooleanVar(value=False)
+        tk.Checkbutton(frame, text="No Images Only", variable=self.no_images_var).grid(row=8, column=1, sticky="w", padx=5, pady=2)
 
     def create_action_frame(self):
         frame = ttk.LabelFrame(self.root, text="3. Export", padding="10")
@@ -123,7 +145,7 @@ class ProductExporterApp:
         self.selected_columns = [] # Default empty = all
         self.all_columns = [
             'Product ID', 'Product Title', 'Handle', 'Status', 'Vendor', 
-            'Product Type', 'Tags', 'Created At', 'Updated At', 'Published At', 
+            'Product Type', 'Tags', 'Published On', 'Created At', 'Updated At', 'Published At', 
             'Image Count', 'Variant Count', 'Variant ID', 'SKU', 'Barcode', 
             'Price', 'Compare At Price', 'Inventory Quantity', 'Inventory Policy', 
             'Requires Shipping', 'Weight', 'Options'
@@ -182,6 +204,8 @@ class ProductExporterApp:
                 self.root.after(0, self.start_vendor_fs)
                 # Trigger tag fetch
                 self.root.after(0, self.start_tag_fs)
+                # Trigger channel fetch
+                self.root.after(0, self.start_channel_fs)
             else:
                 self.root.after(0, lambda: self.log(f"Main Error: {message}"))
                 self.root.after(0, lambda: messagebox.showerror("Connection Failed", message))
@@ -226,6 +250,32 @@ class ProductExporterApp:
             else:
                 self.root.after(0, lambda: self.log(f"Failed to fetch tags: {result}"))
                 self.root.after(0, lambda: self.tag_cb.set("Error loading tags"))
+                
+        threading.Thread(target=run, daemon=True).start()
+
+    def start_channel_fs(self):
+        self.log("Fetching sales channels from Shopify...")
+        self.channel_cb.set("Loading...")
+        
+        def run():
+            success, result = self.client.fetch_publications()
+            if success:
+                def update_ui():
+                    values = ["Any Channel"]
+                    self.channel_map = {}
+                    for pub in result:
+                        name = pub['name']
+                        self.channel_map[name] = pub['id']
+                        values.append(name)
+                        
+                    self.channel_cb['values'] = values
+                    self.channel_cb.state(["!disabled"]) # enable
+                    self.channel_cb.set("Any Channel")
+                    self.log(f"Channels loaded: {len(result)}")
+                self.root.after(0, update_ui)
+            else:
+                self.root.after(0, lambda: self.log(f"Failed to fetch channels: {result}"))
+                self.root.after(0, lambda: self.channel_cb.set("Error loading channels"))
                 
         threading.Thread(target=run, daemon=True).start()
 
@@ -327,8 +377,14 @@ class ProductExporterApp:
                 'vendor': self.vendor_var.get(),
                 'tag': self.tag_var.get(),
                 'sort_key': sort_key,
-                'reverse': reverse
+                'reverse': reverse,
+                'publication_id': 'any'
             }
+            
+            # Map selected channel name to ID
+            selected_channel = self.channel_var.get()
+            if selected_channel != "Any Channel" and selected_channel in self.channel_map:
+                filters['publication_id'] = self.channel_map[selected_channel]
             
             if self.use_date_min.get():
                 filters['created_at_min'] = self.date_min.get_date().strftime("%Y-%m-%dT00:00:00Z")
@@ -359,6 +415,26 @@ class ProductExporterApp:
                     continue
                     
                 for p in products:
+                    # Strict Client-Side Filter for Sales Channels
+                    # The server-side 'published_status' can be leaky (returning products not strictily on the channel).
+                    # We verify against the returned resourcePublications.
+                    if filters.get('publication_id') and filters['publication_id'] != 'any':
+                        target_pub_id = filters['publication_id']
+                        is_verified = False
+                        
+                        if 'resourcePublications' in p:
+                            for edge in p['resourcePublications'].get('edges', []):
+                                node = edge.get('node', {})
+                                pub = node.get('publication', {})
+                                # Check ID match and ensured isPublished is True
+                                if pub.get('id') == target_pub_id and node.get('isPublished'):
+                                    is_verified = True
+                                    break
+                        
+                        if not is_verified:
+                            # Skip this product as it's a false positive from the API
+                            continue
+
                     rows = process_product_node(p, self.selected_columns, clean_ids=self.clean_ids_var.get())
                     all_rows.extend(rows)
                     exported_count += 1
@@ -366,6 +442,28 @@ class ProductExporterApp:
                 self.log(f"Fetched {exported_count} products so far...")
                 
             self.log(f"Processing finished. Total exported: {exported_count}. Saving to Excel...")
+            
+            # Filter Logic
+            use_dup = self.duplicates_only_var.get()
+            use_img = self.no_images_var.get()
+            
+            initial_count = len(all_rows)
+
+            if use_dup and use_img:
+                self.log("Filtering for Duplicates which contain products with No Images...")
+                all_rows = filter_duplicates_and_no_images(all_rows)
+                self.log(f"Smart Combined Filter: Reduced from {initial_count} to {len(all_rows)} rows.")
+            else:
+                if use_dup:
+                    self.log("Filtering for duplicate SKUs/Barcodes...")
+                    all_rows = filter_duplicates(all_rows)
+                    self.log(f"Duplicate Filter: Reduced from {initial_count} to {len(all_rows)} rows.")
+                
+                if use_img:
+                    self.log("Filtering for products with no images...")
+                    all_rows = filter_no_images(all_rows)
+                    self.log(f"No Images Filter: Reduced from {initial_count} to {len(all_rows)} rows.")
+
             success, msg = save_to_excel(all_rows, filename)
             
             if success:
