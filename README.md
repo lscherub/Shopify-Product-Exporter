@@ -8,7 +8,7 @@ A beginner-friendly Python desktop application to export Shopify products, inclu
 - **Excel Export**: Saves products and variants data into a formatted `.xlsx` file.
 - **Filtering**: Filter by Status, Vendor, Date, Tags, and Sort Order.
 
-**NEW UPDATE** Image Filters, Sale Channels, Duplicates SKU/Barcode Filters (note: v1 screenshots doesn't include show these changes)
+**NEW UPDATE** Image Filters, Sale Channels, Duplicates SKU/Barcode Filters (note: v1 screenshots doesn't show these changes)
   
 <p align="center">
   <img src="https://github.com/user-attachments/assets/020db528-4127-43ae-beb6-53fcfca3ce2c" width="31.5%" alt="Screenshot 1" />
@@ -67,6 +67,7 @@ A beginner-friendly Python desktop application to export Shopify products, inclu
 <hr>
 
 **SPECIAL THANKS TO GOOGLE ANTIGRAVITY**
+
 
 
 
